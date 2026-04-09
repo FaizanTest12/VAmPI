@@ -1,5 +1,6 @@
 import datetime
 import jwt
+import bcrypt
 from sqlalchemy.orm import relationship
 from config import db, vuln_app
 from app import vuln, alive
@@ -21,8 +22,20 @@ class User(db.Model):
     def __init__(self, username, password, email, admin=False):
         self.username = username
         self.email = email
-        self.password = password
+        self.password = self._hash_password(password)
         self.admin = admin
+
+    def _hash_password(self, password):
+        """Hash a password using bcrypt"""
+        return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+    def verify_password(self, password):
+        """Verify a password against the stored hash"""
+        return bcrypt.checkpw(password.encode('utf-8'), self.password.encode('utf-8'))
+
+    def update_password(self, new_password):
+        """Update the user's password with a new hashed password"""
+        self.password = self._hash_password(new_password)
 
     def __repr__(self):
         return f'{{"username": "{self.username}", "email": "{self.email}"}}'
